@@ -16,14 +16,16 @@ class BlockTransform(_KernelTransform):
 
     def forward(self, im: Tensor) -> Tensor:
         n, c, h, w = im.size()
-        res = nn.functional.conv2d(
+        subbands = nn.functional.conv2d(
             im.reshape(n * c, 1, h, w),
             self.kernels,
             bias=None,
             stride=(self.kh, self.kw), 
-            0, 1, 1
+            padding=0, 
+            dilation=1, 
+            groups=1
         )
-        return res.view(
+        return subbands.view(
             n,
             c,
             self.num_subbands,
@@ -43,7 +45,10 @@ class InverseBlockTransform(_KernelTransform):
             self.kernels,
             bias=None,
             stride=(self.kh, self.kw), 
-            0, 0, 1, 1
+            padding=0, 
+            output_padding=0, 
+            groups=1, 
+            dilation=1
         )
         return im_restored.view(
             n,
@@ -59,19 +64,22 @@ class DenseTransform(_KernelTransform):
 
     def forward(self, im: Tensor) -> Tensor:
         n, c, h, w = im.size()
-        res = nn.functional.conv2d(
+        subbands = nn.functional.conv2d(
             im.reshape(n * c, 1, h, w),
             self.kernels,
             bias=None,
             stride=1, 
-            0, 1, 1
+            padding=(self.kh-1, self.kw-1), 
+            dilation=1, 
+            groups=1
         )
-        return res.view(
+        *_, hs, ws = subbands.size()
+        return subbands.view(
             n,
             c,
             self.num_subbands,
-            h // self.kh,
-            w // self.kw, 
+            hs,
+            ws, 
         )
 
 
@@ -86,7 +94,10 @@ class InverseDenseTransform(_KernelTransform):
             self.kernels,
             bias=None,
             stride=1, 
-            0, 0, 1, 1
+            padding=0, 
+            output_padding=0, 
+            groups=1, 
+            dilation=1
         )
         im_restored = im_restored[:, :, self.kh-1:1-self.kh, self.kw-1:1-self.kw]
         *_, h, w = im_restored.size()
