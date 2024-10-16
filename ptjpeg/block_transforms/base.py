@@ -75,7 +75,7 @@ class DenseTransform(_KernelTransform):
         )
 
 
-class InverseBlockTransform(_KernelTransform):
+class InverseDenseTransform(_KernelTransform):
     __doc__ = r"""Inverse Dense Transform implemented in torch convolution
         """
 
